@@ -6,10 +6,14 @@ from typing_extensions import Annotated
 
 
 def parse_cors_origins(v: Union[str, List[str]]) -> List[str]:
-    if isinstance(v, str) and not v.startswith("["):
-        return [i.strip() for i in v.split(",")]
-    elif isinstance(v, (list, str)):
+    if isinstance(v, list):
         return v
+    if isinstance(v, str):
+        v = v.strip()
+        if v.startswith("["):
+            import json
+            return json.loads(v)
+        return [i.strip() for i in v.split(",") if i.strip()]
     raise ValueError(v)
 
 
@@ -30,10 +34,13 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/recruitiq"
 
-    # CORS
+    # CORS - includes production Netlify URL as default fallback
     BACKEND_CORS_ORIGINS: Annotated[
         List[str], BeforeValidator(parse_cors_origins)
-    ] = ["http://localhost:3000"]
+    ] = [
+        "http://localhost:3000",
+        "https://resumescanner007.netlify.app",
+    ]
 
 
 settings = Settings()
