@@ -11,15 +11,25 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-# Set all CORS enabled origins
-if settings.BACKEND_CORS_ORIGINS:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin).strip("/") for origin in settings.BACKEND_CORS_ORIGINS],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+# CORS - hardcoded allowed origins for reliability across environments
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://resumescanner007.netlify.app",
+]
+# Also merge any extra origins from settings/env var
+for _o in settings.BACKEND_CORS_ORIGINS:
+    _o = str(_o).strip("/")
+    if _o not in ALLOWED_ORIGINS:
+        ALLOWED_ORIGINS.append(_o)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Include API routers
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
@@ -71,5 +81,6 @@ def read_root():
     return {
         "app": settings.PROJECT_NAME,
         "status": "healthy",
-        "api_docs": "/docs"
+        "api_docs": "/docs",
+        "cors_origins": ALLOWED_ORIGINS
     }
